@@ -1,8 +1,11 @@
 <script setup>
 // 城市/我的位置
+import { ref } from 'vue'
 import { useRouter } from "vue-router";
 import { useCity } from "@/stores/modules/city";
 import { storeToRefs } from "pinia";
+import { formatMonthDay, getDiffDays } from '@/utils/format_date'
+import { useHomeStore } from '@/stores/modules/home'
 
 const router = useRouter();
 // 点击city跳转到city.vue
@@ -18,12 +21,50 @@ const positionClick = () => {
 };
 const cityStore = useCity();
 const { currentCity } = storeToRefs(cityStore);
+
+// 日历信息
+const nowDate = new Date()
+const newDate = new Date()
+newDate.setDate(nowDate.getDate() + 1)
+
+const startDate = ref(formatMonthDay(nowDate))
+const endDate = ref(formatMonthDay(newDate))
+
+const stayCount = ref(1)
+
+const calenderShow = ref(false)
+// 日历点击事件
+const confirmClick = (value) => {
+  const startCalender = value[0]
+  const endCalender = value[1]
+
+  // 入住和离店时间重新赋值
+  startDate.value = formatMonthDay(startCalender)
+  endDate.value = formatMonthDay(endCalender)
+  stayCount.value = getDiffDays(startCalender, endCalender)
+  calenderShow.value = false
+}
+
+// 热门建议
+const homeStore = useHomeStore()
+const { hotSuggests } = storeToRefs(homeStore)
+
+// 开始搜索
+const startSearchBtnClick = () => {
+  router.push({
+    path: '/search',
+    query: {
+      startDate: startDate.value,
+      endDate: endDate.value
+    }
+  }) 
+}
 </script>
 
 <template>
   <div class="home-search-box">
     <!-- 城市/我的位置 -->
-    <div class="location">
+    <div class="location bottom-gray-line">
       <div class="city" @click="cityClick">{{ currentCity.cityName }}</div>
       <div class="position" @click="positionClick">
         <span class="text">我的位置</span>
@@ -32,16 +73,49 @@ const { currentCity } = storeToRefs(cityStore);
     </div>
 
     <!-- 日期范围 -->
-    <div class="date-range section">
+    <div class="date-range section bottom-gray-line"
+          @click="calenderShow = true">
       <div class="start">
-        <div class="tip">入住</div>
-        <div class="time">8月29</div>
+        <div class="date">
+          <div class="tip">入住</div>
+          <div class="time">{{ startDate }}</div>
+        </div>
       </div>
-      <div class="stay"></div>
+      <div class="stay">共 {{ stayCount }} 晚</div>
       <div class="end">
-        <div class="tip">入住</div>
-        <div class="time">8月29</div>
+        <div class="date">
+          <div class="tip">离店</div>
+          <div class="time">{{ endDate }}</div>
+        </div>
       </div>
+    </div>
+
+    <!-- 日历信息 -->
+    <van-calendar v-model:show="calenderShow" type="range" 
+                  @confirm="confirmClick"
+                  color="#ff9854"
+                  :show-confirm="false"
+                  :round="false"/>
+
+    <!-- 价格不限/人数不限 -->
+    <div class="price-counter section bottom-gray-line">
+    <div class="start">价格不限</div>
+    <div class="end">人数不限</div>
+    </div>
+
+    <!-- 关键字/位置/民宿名 -->
+    <div class="keywords section bottom-gray-line">关键字/位置/民宿名</div>
+
+    <!-- 热门建议i(网络) -->
+    <div class="hot-suggests section">
+      <template v-for="(item, index) in hotSuggests" :key="index">
+        <div class="item">{{ item.tagText.text }}</div>
+      </template>
+    </div>
+
+    <!-- 开始搜索 -->
+    <div class="start-search">
+      <div class="btn" @click="startSearchBtnClick">开始搜索</div>
     </div>
   </div>
 </template>
@@ -73,6 +147,70 @@ const { currentCity } = storeToRefs(cityStore);
       width: 18px;
       height: 18px;
     }
+  }
+}
+
+// 日期范围
+.date-range {
+  .date {
+    .tip {
+      font-size: 12px;
+    }
+    .time {
+      padding-top: 3px;
+      color: #333; 
+      font-size: 14px;
+    }
+  }
+}
+// o价格不限/人数不限
+.price-counter {
+  .start {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    border-right: 1px solid var(--line-color);
+    height: 100%;
+  }
+
+  .end {
+    margin-left: 2em;
+  }
+}
+
+.hot-suggests {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  height: auto;
+
+  .item {
+    margin: 4px;
+    padding: 4px 6px;
+    background-color: #F1F3F5;
+    text-align: center;
+    border-radius: 14px;
+    font-size: 12px;
+    color: #3F4954;
+  }
+}
+
+// 开始搜索
+.start-search {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+
+  .btn {
+    width: 342px;
+    height: 38px;
+    line-height: 38px;
+    max-height: 50px;
+    text-align: center;
+    color: #fff;
+    border-radius: 50px;
+    font-size: 18px;
+    font-weight: 500;
+    background-image: var(--theme-linear-gradient);
   }
 }
 </style>

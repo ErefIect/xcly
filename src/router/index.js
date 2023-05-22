@@ -36,5 +36,10 @@ export const router = createRouter({
       path: "/city",
       component: () => import("@/views/city/City.vue"),
     },
+    {
+      name: "search",
+      path: "/search",
+      component: () => import("@/views/search/Search.vue"),
+    },
   ],
 });
